@@ -13,6 +13,9 @@ add_executable(${PROJECT_NAME}
 
     src/Engine/Graphics/Renderer.cpp
     src/Engine/Graphics/Camera.cpp
+    src/Engine/Graphics/Mesh.cpp
+    src/Engine/Graphics/DirectionalLight.cpp
+    src/Engine/Graphics/Starfield.cpp
 
     src/Engine/Input/Input.cpp
 

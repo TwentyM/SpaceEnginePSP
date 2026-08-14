@@ -16,6 +16,8 @@ public:
 
     void Apply() const;
 
+    ScePspFVector3 GetPosition() const;
+
     void Reset();
 
 private:

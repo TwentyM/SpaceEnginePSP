@@ -1,6 +1,9 @@
 #pragma once
 
 #include "../Engine/Graphics/Camera.h"
+#include "../Engine/Graphics/Mesh.h"
+#include "../Engine/Graphics/DirectionalLight.h"
+#include "../Engine/Graphics/Starfield.h"
 
 class Input;
 class Renderer;
@@ -24,5 +27,11 @@ public:
 private:
     Camera m_camera;
 
-    float m_cubeRotation;
+    Mesh m_shipMesh;
+
+    DirectionalLight m_sun;
+
+    Starfield m_starfield;
+
+    float m_shipRotation;
 };

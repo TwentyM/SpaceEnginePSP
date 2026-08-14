@@ -386,6 +386,18 @@ void Camera::Update(
     }
 }
 
+ScePspFVector3 Camera::GetPosition() const
+{
+    ScePspFVector3 position =
+    {
+        m_x,
+        m_y,
+        m_z
+    };
+
+    return position;
+}
+
 
 void Camera::Apply() const
 {

@@ -8,16 +8,18 @@
 #include <pspgum.h>
 
 #include <cmath>
-#include <cstdint>
 
 namespace
 {
-    constexpr int StarCount = 192;
+    struct Position
+    {
+        float x;
+        float y;
+        float z;
+    };
 
     struct LitVertex
     {
-        // PSP GU vertex member order:
-        // normal -> position when no texture/color data is present.
         float nx;
         float ny;
         float nz;
@@ -27,148 +29,429 @@ namespace
         float z;
     };
 
-    struct StarVertex
+    struct Triangle
     {
-        unsigned int color;
-
-        float x;
-        float y;
-        float z;
+        Position a;
+        Position b;
+        Position c;
     };
 
-    // One normal per face. This is intentionally a hard-edged test mesh:
-    // later Blender models will provide their own vertex normals.
-    LitVertex __attribute__((aligned(16))) cubeVertices[] =
+
+    /*
+        Egy nagyon egyszerű, faceted low-poly teszthajó.
+
+                    NOSE
+                     /\
+                    /  \
+             ______/____\______
+            /                  \
+           /                    \
+        __/                      \__
+       /                            \
+       \_______              _______/
+               \____________/
+
+
+        Nem szép modellnek készül,
+        hanem világítás és mesh teszthez.
+    */
+
+    constexpr Triangle ShipTriangles[] =
     {
-        // Front (+Z)
-        { 0,  0,  1,   -1, -1,  1},
-        { 0,  0,  1,    1, -1,  1},
-        { 0,  0,  1,    1,  1,  1},
-        { 0,  0,  1,   -1, -1,  1},
-        { 0,  0,  1,    1,  1,  1},
-        { 0,  0,  1,   -1,  1,  1},
+        // ----------------------------------------------------
+        // TOP FRONT
+        // ----------------------------------------------------
 
-        // Back (-Z)
-        { 0,  0, -1,    1, -1, -1},
-        { 0,  0, -1,   -1, -1, -1},
-        { 0,  0, -1,   -1,  1, -1},
-        { 0,  0, -1,    1, -1, -1},
-        { 0,  0, -1,   -1,  1, -1},
-        { 0,  0, -1,    1,  1, -1},
-
-        // Left (-X)
-        {-1,  0,  0,   -1, -1, -1},
-        {-1,  0,  0,   -1, -1,  1},
-        {-1,  0,  0,   -1,  1,  1},
-        {-1,  0,  0,   -1, -1, -1},
-        {-1,  0,  0,   -1,  1,  1},
-        {-1,  0,  0,   -1,  1, -1},
-
-        // Right (+X)
-        { 1,  0,  0,    1, -1,  1},
-        { 1,  0,  0,    1, -1, -1},
-        { 1,  0,  0,    1,  1, -1},
-        { 1,  0,  0,    1, -1,  1},
-        { 1,  0,  0,    1,  1, -1},
-        { 1,  0,  0,    1,  1,  1},
-
-        // Top (+Y)
-        { 0,  1,  0,   -1,  1,  1},
-        { 0,  1,  0,    1,  1,  1},
-        { 0,  1,  0,    1,  1, -1},
-        { 0,  1,  0,   -1,  1,  1},
-        { 0,  1,  0,    1,  1, -1},
-        { 0,  1,  0,   -1,  1, -1},
-
-        // Bottom (-Y)
-        { 0, -1,  0,   -1, -1, -1},
-        { 0, -1,  0,    1, -1, -1},
-        { 0, -1,  0,    1, -1,  1},
-        { 0, -1,  0,   -1, -1, -1},
-        { 0, -1,  0,    1, -1,  1},
-        { 0, -1,  0,   -1, -1,  1}
-    };
-
-    StarVertex __attribute__((aligned(16))) starVertices[StarCount];
-
-    std::uint32_t NextRandom(std::uint32_t& state)
-    {
-        state = state * 1664525u + 1013904223u;
-        return state;
-    }
-
-    float RandomSigned(std::uint32_t& state)
-    {
-        const std::uint32_t value = (NextRandom(state) >> 8) & 0xFFFFu;
-        return static_cast<float>(value) / 32767.5f - 1.0f;
-    }
-
-    void GenerateStarfield()
-    {
-        std::uint32_t randomState = 0x5EED1234u;
-
-        for (int i = 0; i < StarCount; ++i)
         {
-            float x;
-            float y;
-            float z;
-            float lengthSquared;
+            { 0.00f,  0.00f, -2.20f},
+            { 0.70f, -0.20f, -0.70f},
+            { 0.00f,  0.55f, -0.55f}
+        },
 
-            do
+        {
+            { 0.00f,  0.00f, -2.20f},
+            { 0.00f,  0.55f, -0.55f},
+            {-0.70f, -0.20f, -0.70f}
+        },
+
+
+        // ----------------------------------------------------
+        // LEFT TOP
+        // ----------------------------------------------------
+
+        {
+            {-0.70f, -0.20f, -0.70f},
+            { 0.00f,  0.55f, -0.55f},
+            {-1.65f, -0.20f,  0.25f}
+        },
+
+        {
+            {-1.65f, -0.20f,  0.25f},
+            { 0.00f,  0.55f, -0.55f},
+            { 0.00f,  0.45f,  0.95f}
+        },
+
+
+        // ----------------------------------------------------
+        // RIGHT TOP
+        // ----------------------------------------------------
+
+        {
+            { 0.00f,  0.55f, -0.55f},
+            { 0.70f, -0.20f, -0.70f},
+            { 1.65f, -0.20f,  0.25f}
+        },
+
+        {
+            { 0.00f,  0.55f, -0.55f},
+            { 1.65f, -0.20f,  0.25f},
+            { 0.00f,  0.45f,  0.95f}
+        },
+
+
+        // ----------------------------------------------------
+        // LEFT REAR TOP
+        // ----------------------------------------------------
+
+        {
+            {-1.65f, -0.20f,  0.25f},
+            { 0.00f,  0.45f,  0.95f},
+            {-0.65f, -0.10f,  1.25f}
+        },
+
+
+        // ----------------------------------------------------
+        // REAR TOP
+        // ----------------------------------------------------
+
+        {
+            {-0.65f, -0.10f,  1.25f},
+            { 0.00f,  0.45f,  0.95f},
+            { 0.65f, -0.10f,  1.25f}
+        },
+
+
+        // ----------------------------------------------------
+        // RIGHT REAR TOP
+        // ----------------------------------------------------
+
+        {
+            { 0.00f,  0.45f,  0.95f},
+            { 1.65f, -0.20f,  0.25f},
+            { 0.65f, -0.10f,  1.25f}
+        },
+
+
+        // ----------------------------------------------------
+        // BOTTOM FRONT
+        // ----------------------------------------------------
+
+        {
+            { 0.00f,  0.00f, -2.20f},
+            {-0.70f, -0.20f, -0.70f},
+            { 0.00f, -0.45f,  0.85f}
+        },
+
+        {
+            { 0.00f,  0.00f, -2.20f},
+            { 0.00f, -0.45f,  0.85f},
+            { 0.70f, -0.20f, -0.70f}
+        },
+
+
+        // ----------------------------------------------------
+        // LEFT BOTTOM
+        // ----------------------------------------------------
+
+        {
+            {-0.70f, -0.20f, -0.70f},
+            {-1.65f, -0.20f,  0.25f},
+            { 0.00f, -0.45f,  0.85f}
+        },
+
+        {
+            {-1.65f, -0.20f,  0.25f},
+            {-0.65f, -0.10f,  1.25f},
+            { 0.00f, -0.45f,  0.85f}
+        },
+
+
+        // ----------------------------------------------------
+        // RIGHT BOTTOM
+        // ----------------------------------------------------
+
+        {
+            { 0.70f, -0.20f, -0.70f},
+            { 0.00f, -0.45f,  0.85f},
+            { 1.65f, -0.20f,  0.25f}
+        },
+
+        {
+            { 1.65f, -0.20f,  0.25f},
+            { 0.00f, -0.45f,  0.85f},
+            { 0.65f, -0.10f,  1.25f}
+        },
+
+
+        // ----------------------------------------------------
+        // REAR BOTTOM
+        // ----------------------------------------------------
+
+        {
+            {-0.65f, -0.10f,  1.25f},
+            { 0.65f, -0.10f,  1.25f},
+            { 0.00f, -0.45f,  0.85f}
+        }
+    };
+
+
+    constexpr int ShipTriangleCount =
+        sizeof(ShipTriangles) /
+        sizeof(Triangle);
+
+    constexpr int ShipVertexCount =
+        ShipTriangleCount * 3;
+
+
+    alignas(16)
+    LitVertex ShipVertices[
+        ShipVertexCount
+    ];
+
+
+    void WriteVertex(
+        LitVertex& destination,
+        const Position& position,
+        float nx,
+        float ny,
+        float nz
+    )
+    {
+        destination.nx = nx;
+        destination.ny = ny;
+        destination.nz = nz;
+
+        destination.x = position.x;
+        destination.y = position.y;
+        destination.z = position.z;
+    }
+
+
+    void BuildShipMesh()
+    {
+        for (
+            int triangleIndex = 0;
+            triangleIndex < ShipTriangleCount;
+            ++triangleIndex
+        )
+        {
+            const Triangle& triangle =
+                ShipTriangles[
+                    triangleIndex
+                ];
+
+
+            // Edge AB.
+            const float ux =
+                triangle.b.x -
+                triangle.a.x;
+
+            const float uy =
+                triangle.b.y -
+                triangle.a.y;
+
+            const float uz =
+                triangle.b.z -
+                triangle.a.z;
+
+
+            // Edge AC.
+            const float vx =
+                triangle.c.x -
+                triangle.a.x;
+
+            const float vy =
+                triangle.c.y -
+                triangle.a.y;
+
+            const float vz =
+                triangle.c.z -
+                triangle.a.z;
+
+
+            // Cross product.
+            float nx =
+                uy * vz -
+                uz * vy;
+
+            float ny =
+                uz * vx -
+                ux * vz;
+
+            float nz =
+                ux * vy -
+                uy * vx;
+
+
+            float length =
+                std::sqrt(
+                    nx * nx +
+                    ny * ny +
+                    nz * nz
+                );
+
+
+            if (length > 0.00001f)
             {
-                x = RandomSigned(randomState);
-                y = RandomSigned(randomState);
-                z = RandomSigned(randomState);
-
-                lengthSquared = x * x + y * y + z * z;
+                nx /= length;
+                ny /= length;
+                nz /= length;
             }
-            while (lengthSquared < 0.05f || lengthSquared > 1.0f);
 
-            const float inverseLength = 1.0f / std::sqrt(lengthSquared);
-            const float radius = 70.0f + static_cast<float>(NextRandom(randomState) % 50u);
 
-            starVertices[i].x = x * inverseLength * radius;
-            starVertices[i].y = y * inverseLength * radius;
-            starVertices[i].z = z * inverseLength * radius;
+            /*
+                Ellenőrizzük, hogy a normal kifelé néz-e.
 
-            // PSP colors are ABGR. Most stars are neutral white/grey,
-            // with a few subtle warm/cool variants.
-            switch (NextRandom(randomState) % 12u)
+                A prototípushajó nagyjából az origó
+                körül helyezkedik el, ezért a triangle
+                centroidjával egyszerűen eldönthető,
+                hogy befelé vagy kifelé mutat.
+            */
+
+            const float centerX =
+                (
+                    triangle.a.x +
+                    triangle.b.x +
+                    triangle.c.x
+                ) / 3.0f;
+
+            const float centerY =
+                (
+                    triangle.a.y +
+                    triangle.b.y +
+                    triangle.c.y
+                ) / 3.0f;
+
+            const float centerZ =
+                (
+                    triangle.a.z +
+                    triangle.b.z +
+                    triangle.c.z
+                ) / 3.0f;
+
+
+            const float direction =
+                nx * centerX +
+                ny * centerY +
+                nz * centerZ;
+
+
+            if (direction < 0.0f)
             {
-                case 0:
-                    starVertices[i].color = 0xFFFFD8C8; // cool white
-                    break;
-
-                case 1:
-                    starVertices[i].color = 0xFFB8E4FF; // warm white
-                    break;
-
-                case 2:
-                case 3:
-                    starVertices[i].color = 0xFFFFFFFF; // bright white
-                    break;
-
-                default:
-                    starVertices[i].color = 0xFFD8D8D8; // soft white
-                    break;
+                nx = -nx;
+                ny = -ny;
+                nz = -nz;
             }
+
+
+            const int output =
+                triangleIndex * 3;
+
+
+            WriteVertex(
+                ShipVertices[output + 0],
+                triangle.a,
+                nx,
+                ny,
+                nz
+            );
+
+            WriteVertex(
+                ShipVertices[output + 1],
+                triangle.b,
+                nx,
+                ny,
+                nz
+            );
+
+            WriteVertex(
+                ShipVertices[output + 2],
+                triangle.c,
+                nx,
+                ny,
+                nz
+            );
         }
     }
 }
 
+
 Game::Game()
-    : m_cubeRotation(0.0f)
+    : m_shipRotation(0.0f)
 {
 }
+
 
 void Game::Initialize()
 {
-    GenerateStarfield();
+    // --------------------------------------------------------
+    // STARFIELD
+    // --------------------------------------------------------
 
-    // Vertex data is read by the Geometry Engine, so make sure generated
-    // star data has reached memory before the first draw.
+    m_starfield.Generate(
+        0x5EED1234u
+    );
+
+
+    // --------------------------------------------------------
+    // SUN
+    // --------------------------------------------------------
+
+    m_sun.SetDirection(
+        -0.55f,
+        -0.35f,
+        -0.75f
+    );
+
+    m_sun.SetGlobalAmbient(
+        0xFF202020
+    );
+
+    m_sun.SetAmbient(
+        0xFF181818
+    );
+
+    m_sun.SetDiffuse(
+        0xFFFFFFFF
+    );
+
+
+    // --------------------------------------------------------
+    // TEST SHIP
+    // --------------------------------------------------------
+
+    BuildShipMesh();
+
+    m_shipMesh.SetData(
+        ShipVertices,
+        ShipVertexCount,
+
+        GU_TRIANGLES,
+
+        GU_NORMAL_32BITF |
+        GU_VERTEX_32BITF |
+        GU_TRANSFORM_3D
+    );
+
+
+    /*
+        Starfield és ship vertexek CPU oldalon
+        készültek, ezért flusholjuk a cache-t,
+        mielőtt a Geometry Engine olvassa őket.
+    */
     sceKernelDcacheWritebackAll();
 }
+
 
 void Game::Update(
     const Input& input,
@@ -180,10 +463,12 @@ void Game::Update(
         deltaTime
     );
 
-    m_cubeRotation +=
-        0.35f *
+
+    m_shipRotation +=
+        0.30f *
         deltaTime;
 }
+
 
 void Game::Render(
     Renderer& renderer
@@ -191,77 +476,37 @@ void Game::Render(
 {
     (void)renderer;
 
+
+    // --------------------------------------------------------
+    // CAMERA
+    // --------------------------------------------------------
+
     m_camera.Apply();
 
-    // --------------------------------------------------------
-    // STARFIELD
-    // --------------------------------------------------------
-    // GU_POINTS are single-pixel primitives, which makes them a very cheap
-    // first approximation of distant stars. Lighting/depth are disabled so
-    // the starfield behaves like a background layer.
-
-    sceGuDisable(GU_LIGHTING);
-    sceGuDisable(GU_DEPTH_TEST);
-
-    sceGumMatrixMode(GU_MODEL);
-    sceGumLoadIdentity();
-
-    sceGumDrawArray(
-        GU_POINTS,
-
-        GU_COLOR_8888 |
-        GU_VERTEX_32BITF |
-        GU_TRANSFORM_3D,
-
-        StarCount,
-        nullptr,
-        starVertices
-    );
-
-    sceGuEnable(GU_DEPTH_TEST);
 
     // --------------------------------------------------------
-    // SIMPLE SUN / DIRECTIONAL LIGHT
+    // BACKGROUND STARS
     // --------------------------------------------------------
 
-    sceGuEnable(GU_LIGHTING);
-    sceGuEnable(GU_LIGHT0);
+    const ScePspFVector3 cameraPosition =
+        m_camera.GetPosition();
 
-    sceGuLightMode(GU_SINGLE_COLOR);
-
-    // Global low-level ambient illumination so the unlit side never becomes
-    // completely black. Later this can depend on system/environment type.
-    sceGuAmbient(0xFF202020);
-
-    const ScePspFVector3 sunDirection =
-    {
-        -0.55f,
-        -0.35f,
-        -0.75f
-    };
-
-    sceGuLight(
-        0,
-        GU_DIRECTIONAL,
-        GU_AMBIENT_AND_DIFFUSE,
-        &sunDirection
+    m_starfield.Draw(
+        cameraPosition
     );
 
-    sceGuLightColor(
-        0,
-        GU_AMBIENT,
-        0xFF181818
-    );
 
-    sceGuLightColor(
-        0,
-        GU_DIFFUSE,
-        0xFFFFFFFF
-    );
+    // --------------------------------------------------------
+    // SUN
+    // --------------------------------------------------------
 
-    // Grey test material. No vertex colors are needed here: the lighting is
-    // driven by the normals, which is exactly what we need to validate before
-    // importing real ship meshes.
+    m_sun.Apply();
+
+
+    // --------------------------------------------------------
+    // MATERIAL
+    // --------------------------------------------------------
+
     sceGuModelColor(
         0x00000000,
         0xFFFFFFFF,
@@ -269,35 +514,36 @@ void Game::Render(
         0x00000000
     );
 
+
     // --------------------------------------------------------
-    // LIT TEST CUBE
+    // SHIP
     // --------------------------------------------------------
 
-    sceGumMatrixMode(GU_MODEL);
-    sceGumLoadIdentity();
-
-    const ScePspFVector3 rotation =
-    {
-        m_cubeRotation * 0.5f,
-        m_cubeRotation,
-        0.0f
-    };
-
-    sceGumRotateXYZ(&rotation);
-
-    sceGumDrawArray(
-        GU_TRIANGLES,
-
-        GU_NORMAL_32BITF |
-        GU_VERTEX_32BITF |
-        GU_TRANSFORM_3D,
-
-        sizeof(cubeVertices) / sizeof(LitVertex),
-        nullptr,
-        cubeVertices
+    sceGumMatrixMode(
+        GU_MODEL
     );
 
-    // Restore state for future render passes.
-    sceGuDisable(GU_LIGHT0);
-    sceGuDisable(GU_LIGHTING);
+    sceGumLoadIdentity();
+
+
+    ScePspFVector3 rotation =
+    {
+        m_shipRotation * 0.25f,
+        m_shipRotation,
+        m_shipRotation * 0.10f
+    };
+
+    sceGumRotateXYZ(
+        &rotation
+    );
+
+
+    m_shipMesh.Draw();
+
+
+    // --------------------------------------------------------
+    // CLEANUP
+    // --------------------------------------------------------
+
+    m_sun.Disable();
 }
