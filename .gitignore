@@ -1,0 +1,21 @@
+# CMake / build output
+/build/
+/out/
+
+# Compiled files
+*.o
+*.obj
+*.elf
+*.prx
+
+# Generated PSP packages
+*.PBP
+*.pbp
+
+# Temporary files
+*.tmp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
