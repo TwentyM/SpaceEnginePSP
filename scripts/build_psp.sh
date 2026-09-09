@@ -2,40 +2,79 @@
 
 set -e
 
+
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
 BUILD_DIR="$ROOT_DIR/build"
 
 OUTPUT_DIR="/mnt/c/PSPDev/Builds/SpaceEngine"
 
 PPSSPP_EXE="/mnt/c/Program Files/PPSSPP/PPSSPPWindows64.exe"
 
+
 echo "================================="
 echo " SpaceEngine PSP Build"
 echo "================================="
 echo
 
+
 mkdir -p "$BUILD_DIR"
+
+
+echo "[1/6] Compiling assets..."
+
+mkdir -p \
+    "$BUILD_DIR/assets/ships"
+
+
+python3 \
+    "$ROOT_DIR/tools/compile_ship.py" \
+    "$ROOT_DIR/assets/ships/sidewinder/export/Sidewinder.gltf" \
+    "$BUILD_DIR/assets/ships/Sidewinder.pspmesh"
+
+
+echo
+echo "[2/6] Configuring..."
 
 cd "$BUILD_DIR"
 
-echo "[1/4] Configuring..."
-psp-cmake ..
+psp-cmake "$ROOT_DIR"
+
 
 echo
-echo "[2/4] Building..."
+echo "[3/6] Building..."
+
 cmake --build . --parallel
 
-echo
-echo "[3/4] Copying EBOOT..."
-
-mkdir -p "$OUTPUT_DIR"
-cp "$BUILD_DIR/EBOOT.PBP" "$OUTPUT_DIR/EBOOT.PBP"
 
 echo
-echo "[4/4] Restarting PPSSPP..."
+echo "[4/6] Copying EBOOT..."
 
-# Ellenőrizzük, hogy létezik-e a PPSSPP.
+mkdir -p \
+    "$OUTPUT_DIR"
+
+cp \
+    "$BUILD_DIR/EBOOT.PBP" \
+    "$OUTPUT_DIR/EBOOT.PBP"
+
+
+echo
+echo "[5/6] Copying assets..."
+
+mkdir -p \
+    "$OUTPUT_DIR/assets/ships"
+
+cp \
+    "$BUILD_DIR/assets/ships/Sidewinder.pspmesh" \
+    "$OUTPUT_DIR/assets/ships/Sidewinder.pspmesh"
+
+
+echo
+echo "[6/6] Restarting PPSSPP..."
+
+
 if [ ! -f "$PPSSPP_EXE" ]; then
+
     echo
     echo "================================="
     echo " ERROR"
@@ -46,15 +85,26 @@ if [ ! -f "$PPSSPP_EXE" ]; then
     echo "Expected location:"
     echo "$PPSSPP_EXE"
     echo
+
     exit 1
 fi
 
-# Ha fut egy korábbi PPSSPP példány, bezárjuk.
-taskkill.exe /IM PPSSPPWindows64.exe /F > /dev/null 2>&1 || true
 
-# Linux/WSL útvonalak átalakítása Windows útvonalakká.
-PPSSPP_WINDOWS_PATH="$(wslpath -w "$PPSSPP_EXE")"
-EBOOT_WINDOWS_PATH="$(wslpath -w "$OUTPUT_DIR/EBOOT.PBP")"
+taskkill.exe \
+    /IM PPSSPPWindows64.exe \
+    /F \
+    > /dev/null 2>&1 || true
+
+
+PPSSPP_WINDOWS_PATH="$(
+    wslpath -w "$PPSSPP_EXE"
+)"
+
+
+EBOOT_WINDOWS_PATH="$(
+    wslpath -w "$OUTPUT_DIR/EBOOT.PBP"
+)"
+
 
 echo
 echo "PPSSPP:"
@@ -67,16 +117,26 @@ echo "$EBOOT_WINDOWS_PATH"
 echo
 echo "Launching PPSSPP..."
 
-# Windows oldalon, leválasztott folyamatként indítjuk.
-cmd.exe /C start "" "$PPSSPP_WINDOWS_PATH" "$EBOOT_WINDOWS_PATH"
+
+cmd.exe /C start \
+    "" \
+    "$PPSSPP_WINDOWS_PATH" \
+    "$EBOOT_WINDOWS_PATH"
+
 
 echo
 echo "================================="
 echo " BUILD SUCCESSFUL"
 echo "================================="
+
 echo
 echo "EBOOT:"
 echo "$EBOOT_WINDOWS_PATH"
+
+echo
+echo "Assets:"
+echo "$OUTPUT_DIR/assets"
+
 echo
 echo "PPSSPP launched."
 echo

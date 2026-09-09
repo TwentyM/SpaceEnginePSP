@@ -4,6 +4,7 @@
 #include "../Engine/Graphics/Mesh.h"
 #include "../Engine/Graphics/DirectionalLight.h"
 #include "../Engine/Graphics/Starfield.h"
+#include "../Engine/Resources/PspMeshResource.h"
 
 class Input;
 class Renderer;
@@ -28,6 +29,7 @@ private:
     Camera m_camera;
 
     Mesh m_shipMesh;
+    PspMeshResource m_shipResource;
 
     DirectionalLight m_sun;
 

@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 MAGIC = b"SEPSPM01"
-VERSION = 1
+VERSION = 2
 
 MARKER_ENGINE = 1
 MARKER_WEAPON = 2
@@ -339,6 +339,35 @@ def transform_normal(
     return normalize(rotated)
 
 
+def to_engine_position(v):
+    """
+    glTF:
+        +X right
+        +Y up
+        +Z forward
+
+    SpaceEngine:
+        +X right
+        +Y up
+        -Z forward
+    """
+
+    return (
+        v[0],
+        v[1],
+        -v[2],
+    )
+
+
+def to_engine_direction(v):
+    return normalize(
+        (
+            v[0],
+            v[1],
+            -v[2],
+        )
+    )
+
 # ------------------------------------------------------------
 # Marker handling
 # ------------------------------------------------------------
@@ -492,38 +521,60 @@ def compile_ship(
     bounding_radius = 0.0
 
     # Indexed glTF mesh -> flat PSP triangle list.
-    for index in indices:
-        position = transform_position(
-            positions[index],
-            hull_transform
+    if len(indices) % 3 != 0:
+        raise RuntimeError(
+            "Triangle index count is invalid."
         )
 
-        normal = transform_normal(
-            normals[index],
-            hull_transform
-        )
 
-        uv = uvs[index]
+    for triangle_start in range(
+        0,
+        len(indices),
+        3
+    ):
+        i0 = indices[triangle_start + 0]
+        i1 = indices[triangle_start + 1]
+        i2 = indices[triangle_start + 2]
 
-        bounding_radius = max(
-            bounding_radius,
-            vec_length(position)
-        )
+        # Z tükrözése megfordítja a triangle windinget,
+        # ezért i1/i2 sorrendet felcseréljük.
 
-        vertices.append(
-            (
-                uv[0],
-                uv[1],
-
-                normal[0],
-                normal[1],
-                normal[2],
-
-                position[0],
-                position[1],
-                position[2],
+        for index in (i0, i2, i1):
+            position = to_engine_position(
+                transform_position(
+                    positions[index],
+                    hull_transform
+                )
             )
-        )
+
+            normal = to_engine_direction(
+                transform_normal(
+                    normals[index],
+                    hull_transform
+                )
+            )
+
+            uv = uvs[index]
+
+            bounding_radius = max(
+                bounding_radius,
+                vec_length(position)
+            )
+
+            vertices.append(
+                (
+                    uv[0],
+                    uv[1],
+
+                    normal[0],
+                    normal[1],
+                    normal[2],
+
+                    position[0],
+                    position[1],
+                    position[2],
+                )
+            )
 
     markers = []
 
@@ -548,7 +599,10 @@ def compile_ship(
                 node_index
             ]
 
-        position = transform[0]
+        position = to_engine_position(
+            transform[0]
+        )
+
         rotation = transform[1]
 
         # Blender Single Arrow points along local +Z.
@@ -559,13 +613,11 @@ def compile_ship(
         # So +Y is the correct local marker direction
         # in the exported glTF.
 
-        forward = quaternion_rotate(
-            rotation,
-            (0.0, 1.0, 0.0)
-        )
-
-        forward = normalize(
-            forward
+        forward = to_engine_direction(
+            quaternion_rotate(
+                rotation,
+                (0.0, 1.0, 0.0)
+            )
         )
 
         markers.append(
