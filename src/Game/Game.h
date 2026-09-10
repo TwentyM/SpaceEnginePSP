@@ -5,6 +5,7 @@
 #include "../Engine/Graphics/DirectionalLight.h"
 #include "../Engine/Graphics/Starfield.h"
 #include "../Engine/Resources/PspMeshResource.h"
+#include "../Engine/Resources/PspTextureResource.h"
 
 class Input;
 class Renderer;
@@ -30,6 +31,7 @@ private:
 
     Mesh m_shipMesh;
     PspMeshResource m_shipResource;
+    PspTextureResource m_shipTexture;
 
     DirectionalLight m_sun;
 

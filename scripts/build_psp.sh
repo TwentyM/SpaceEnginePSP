@@ -32,6 +32,11 @@ python3 \
     "$ROOT_DIR/assets/ships/sidewinder/export/Sidewinder.gltf" \
     "$BUILD_DIR/assets/ships/Sidewinder.pspmesh"
 
+python3 \
+    "$ROOT_DIR/tools/compile_texture.py" \
+    "$ROOT_DIR/assets/ships/sidewinder/export/Sidewinder_UV_Texture_V1_5.png" \
+    "$BUILD_DIR/assets/ships/Sidewinder.psptx"
+
 
 echo
 echo "[2/6] Configuring..."
@@ -67,6 +72,10 @@ mkdir -p \
 cp \
     "$BUILD_DIR/assets/ships/Sidewinder.pspmesh" \
     "$OUTPUT_DIR/assets/ships/Sidewinder.pspmesh"
+
+cp \
+    "$BUILD_DIR/assets/ships/Sidewinder.psptx" \
+    "$OUTPUT_DIR/assets/ships/Sidewinder.psptx"
 
 
 echo

@@ -63,6 +63,10 @@ void Game::Initialize()
         );
     }
 
+    m_shipTexture.Load(
+        "assets/ships/Sidewinder.psptx"
+    );
+
 
     sceKernelDcacheWritebackAll();
 }
@@ -123,15 +127,11 @@ void Game::Render(
     // MATERIAL
     // --------------------------------------------------------
 
-    sceGuDisable(
-        GU_TEXTURE_2D
-    );
-
 
     sceGuModelColor(
         0x00000000,
         0xFFFFFFFF,
-        0xFFD0D0D0,
+        0xFFFFFFFF,
         0x00000000
     );
 
@@ -179,9 +179,11 @@ void Game::Render(
         &scale
     );
 
+    m_shipTexture.Bind();
 
     m_shipMesh.Draw();
 
+    m_shipTexture.Unbind();
 
     // --------------------------------------------------------
     // CLEANUP

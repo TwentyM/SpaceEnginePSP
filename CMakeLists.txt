@@ -18,6 +18,7 @@ add_executable(${PROJECT_NAME}
     src/Engine/Graphics/Starfield.cpp
 
     src/Engine/Resources/PspMeshResource.cpp
+    src/Engine/Resources/PspTextureResource.cpp
 
     src/Engine/Input/Input.cpp
 
