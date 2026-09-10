@@ -8,6 +8,7 @@
 #include "../Engine/Resources/PspTextureResource.h"
 #include "../Engine/Graphics/EnginePlumeRenderer.h"
 #include "Combat/ProjectileSystem.h"
+#include "Ships/PlayerShip.h"
 
 class Input;
 class Renderer;
@@ -43,10 +44,8 @@ private:
 
     ProjectileSystem m_projectiles;
 
-    float m_shipRotation;
+    PlayerShip m_playerShip;
 
-    float m_enginePower;
     float m_enginePhase;
-    
     bool m_fireRequested;
 };

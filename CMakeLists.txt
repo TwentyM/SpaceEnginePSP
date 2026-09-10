@@ -22,7 +22,8 @@ add_executable(${PROJECT_NAME}
     src/Engine/Resources/PspTextureResource.cpp
 
     src/Engine/Input/Input.cpp
-
+    
+    src/Game/Ships/PlayerShip.cpp
     src/Game/Combat/ProjectileSystem.cpp
     src/Game/Game.cpp
 )

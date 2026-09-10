@@ -8,14 +8,10 @@
 #include <pspgum.h>
 #include <pspctrl.h>
 
-#include <cmath>
-
 
 Game::Game()
-    : m_shipRotation(0.0f),
-      m_enginePower(0.25f),
-      m_enginePhase(0.0f),
-      m_fireRequested(false)
+    : m_enginePhase(0.0f),
+    m_fireRequested(false)
 {
 }
 
@@ -41,13 +37,16 @@ void Game::Initialize()
         -0.75f
     );
 
+
     m_sun.SetGlobalAmbient(
         0xFF202020
     );
 
+
     m_sun.SetAmbient(
         0xFF181818
     );
+
 
     m_sun.SetDiffuse(
         0xFFFFFFFF
@@ -69,8 +68,19 @@ void Game::Initialize()
         );
     }
 
+
     m_shipTexture.Load(
         "assets/ships/Sidewinder.psptx"
+    );
+
+
+    // --------------------------------------------------------
+    // CAMERA INITIAL POSITION
+    // --------------------------------------------------------
+
+    m_camera.Follow(
+        m_playerShip.GetPosition(),
+        m_playerShip.GetOrientation()
     );
 
 
@@ -83,87 +93,51 @@ void Game::Update(
     float deltaTime
 )
 {
-    m_camera.Update(
+    // --------------------------------------------------------
+    // PLAYER SHIP
+    // --------------------------------------------------------
+
+    m_playerShip.Update(
         input,
         deltaTime
     );
 
 
-    m_shipRotation +=
-        0.30f *
-        deltaTime;
+    // --------------------------------------------------------
+    // CAMERA
+    // --------------------------------------------------------
+
+    m_camera.Follow(
+        m_playerShip.GetPosition(),
+        m_playerShip.GetOrientation()
+    );
 
 
     // --------------------------------------------------------
-    // TEMPORARY ENGINE POWER TEST
+    // ENGINE EFFECT
     // --------------------------------------------------------
 
-    float targetPower =
-        0.25f;
-
-
-    // Triangle = normál előremenet.
-    if (
-        input.IsDown(
-            PSP_CTRL_TRIANGLE
-        )
-    )
-    {
-        targetPower =
-            0.70f;
-    }
-
-
-    // Circle = boost.
-    if (
-        input.IsDown(
-            PSP_CTRL_CIRCLE
-        )
-    )
-    {
-        targetPower =
-            1.0f;
-    }
-
-
-    /*
-        Lágy átmenet, hogy ne azonnal
-        ugorjon a csóva mérete.
-    */
-    float response =
-        deltaTime *
-        6.0f;
-
-
-    if (response > 1.0f)
-    {
-        response = 1.0f;
-    }
-
-
-    m_enginePower +=
-        (
-            targetPower -
-            m_enginePower
-        ) *
-        response;
+    const float enginePower =
+        m_playerShip.GetEnginePower();
 
 
     m_enginePhase +=
         deltaTime *
         (
             10.0f +
-            m_enginePower *
+            enginePower *
             12.0f
         );
+
+
+    // --------------------------------------------------------
+    // PROJECTILES
+    // --------------------------------------------------------
 
     m_projectiles.Update(
         deltaTime
     );
 
-
-    // Temporary weapon test:
-    // START = fire.
     if (
         input.IsPressed(
             PSP_CTRL_START
@@ -210,11 +184,6 @@ void Game::Render(
     m_sun.Apply();
 
 
-    // --------------------------------------------------------
-    // MATERIAL
-    // --------------------------------------------------------
-
-
     sceGuModelColor(
         0x00000000,
         0xFFFFFFFF,
@@ -224,59 +193,40 @@ void Game::Render(
 
 
     // --------------------------------------------------------
-    // SIDEWINDER
+    // PLAYER SHIP TRANSFORM
     // --------------------------------------------------------
 
-    sceGumMatrixMode(
-        GU_MODEL
-    );
-
-    sceGumLoadIdentity();
-
-
-    ScePspFVector3 rotation =
-    {
-        m_shipRotation * 0.25f,
-        m_shipRotation,
-        m_shipRotation * 0.10f
-    };
-
-
-    sceGumRotateXYZ(
-        &rotation
-    );
+    m_playerShip.ApplyModelTransform();
 
 
     /*
-        Csak preview scale!
+        Most már nincs 0.15 preview scale.
 
-        A modell tényleges méretét megtartjuk
-        a .pspmesh-ben. Jelenleg a kamera még
-        a régi kis tesztmodellhez van állítva.
+        A Blender modell tényleges méretét
+        használjuk a világban.
     */
-    ScePspFVector3 scale =
-    {
-        0.15f,
-        0.15f,
-        0.15f
-    };
 
-
-    sceGumScale(
-        &scale
-    );
 
     ScePspFMatrix4 shipModelMatrix;
+
 
     sceGumStoreMatrix(
         &shipModelMatrix
     );
 
+
+    // --------------------------------------------------------
+    // SIDEWINDER
+    // --------------------------------------------------------
+
     m_shipTexture.Bind();
+
 
     m_shipMesh.Draw();
 
+
     m_shipTexture.Unbind();
+
 
     // --------------------------------------------------------
     // WEAPON FIRE
@@ -286,7 +236,8 @@ void Game::Render(
     {
         for (
             int i = 0;
-            i < m_shipResource.GetMarkerCount();
+            i <
+            m_shipResource.GetMarkerCount();
             ++i
         )
         {
@@ -318,6 +269,7 @@ void Game::Render(
             false;
     }
 
+
     // --------------------------------------------------------
     // ENGINE PLUMES
     // --------------------------------------------------------
@@ -325,12 +277,18 @@ void Game::Render(
     m_sun.Disable();
 
 
-    int engineIndex = 0;
+    int engineIndex =
+        0;
+
+
+    const float enginePower =
+        m_playerShip.GetEnginePower();
 
 
     for (
         int i = 0;
-        i < m_shipResource.GetMarkerCount();
+        i <
+        m_shipResource.GetMarkerCount();
         ++i
     )
     {
@@ -350,11 +308,6 @@ void Game::Render(
         }
 
 
-        /*
-            A két hajtómű kap egy kis eltérő
-            phase-t, így nem teljesen egyszerre
-            pulzálnak.
-        */
         const float phase =
             m_enginePhase +
             static_cast<float>(
@@ -366,13 +319,18 @@ void Game::Render(
         m_enginePlume.Draw(
             marker->position,
             marker->forward,
-            m_enginePower,
+            enginePower,
             phase
         );
 
 
         ++engineIndex;
     }
+
+
+    // --------------------------------------------------------
+    // PROJECTILES
+    // --------------------------------------------------------
 
     m_projectiles.Draw();
 }

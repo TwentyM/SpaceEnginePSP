@@ -2,45 +2,36 @@
 
 #include <psptypes.h>
 
-class Input;
 
 class Camera
 {
 public:
     Camera();
 
-    void Update(
-        const Input& input,
-        float deltaTime
+
+    void Follow(
+        const ScePspFVector3& position,
+        const ScePspFQuaternion& orientation
     );
+
 
     void Apply() const;
 
+
     ScePspFVector3 GetPosition() const;
 
-    void Reset();
 
 private:
-    void GetBasisVectors(
-        ScePspFVector3& forward,
-        ScePspFVector3& right,
-        ScePspFVector3& up
-    ) const;
+    ScePspFVector3 m_position;
 
-    void ApplyLocalRotation(
-        float pitch,
-        float yaw,
-        float roll
-    );
+    ScePspFVector3 m_target;
 
-private:
-    float m_x;
-    float m_y;
-    float m_z;
+    ScePspFVector3 m_up;
 
-    ScePspFQuaternion m_orientation;
 
-    float m_moveSpeed;
-    float m_lookSpeed;
-    float m_rollSpeed;
+    float m_chaseDistance;
+
+    float m_chaseHeight;
+
+    float m_lookAhead;
 };
