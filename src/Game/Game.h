@@ -6,6 +6,7 @@
 #include "../Engine/Graphics/Starfield.h"
 #include "../Engine/Resources/PspMeshResource.h"
 #include "../Engine/Resources/PspTextureResource.h"
+#include "../Engine/Graphics/EnginePlumeRenderer.h"
 
 class Input;
 class Renderer;
@@ -37,5 +38,10 @@ private:
 
     Starfield m_starfield;
 
+    EnginePlumeRenderer m_enginePlume;
+
     float m_shipRotation;
+
+    float m_enginePower;
+    float m_enginePhase;
 };

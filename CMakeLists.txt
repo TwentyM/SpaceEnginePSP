@@ -16,6 +16,7 @@ add_executable(${PROJECT_NAME}
     src/Engine/Graphics/Mesh.cpp
     src/Engine/Graphics/DirectionalLight.cpp
     src/Engine/Graphics/Starfield.cpp
+    src/Engine/Graphics/EnginePlumeRenderer.cpp
 
     src/Engine/Resources/PspMeshResource.cpp
     src/Engine/Resources/PspTextureResource.cpp
