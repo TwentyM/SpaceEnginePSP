@@ -7,6 +7,7 @@
 #include "../Engine/Resources/PspMeshResource.h"
 #include "../Engine/Resources/PspTextureResource.h"
 #include "../Engine/Graphics/EnginePlumeRenderer.h"
+#include "Combat/ProjectileSystem.h"
 
 class Input;
 class Renderer;
@@ -40,8 +41,12 @@ private:
 
     EnginePlumeRenderer m_enginePlume;
 
+    ProjectileSystem m_projectiles;
+
     float m_shipRotation;
 
     float m_enginePower;
     float m_enginePhase;
+    
+    bool m_fireRequested;
 };

@@ -14,7 +14,8 @@
 Game::Game()
     : m_shipRotation(0.0f),
       m_enginePower(0.25f),
-      m_enginePhase(0.0f)
+      m_enginePhase(0.0f),
+      m_fireRequested(false)
 {
 }
 
@@ -155,6 +156,23 @@ void Game::Update(
             m_enginePower *
             12.0f
         );
+
+    m_projectiles.Update(
+        deltaTime
+    );
+
+
+    // Temporary weapon test:
+    // START = fire.
+    if (
+        input.IsPressed(
+            PSP_CTRL_START
+        )
+    )
+    {
+        m_fireRequested =
+            true;
+    }
 }
 
 
@@ -248,11 +266,57 @@ void Game::Render(
         &scale
     );
 
+    ScePspFMatrix4 shipModelMatrix;
+
+    sceGumStoreMatrix(
+        &shipModelMatrix
+    );
+
     m_shipTexture.Bind();
 
     m_shipMesh.Draw();
 
     m_shipTexture.Unbind();
+
+    // --------------------------------------------------------
+    // WEAPON FIRE
+    // --------------------------------------------------------
+
+    if (m_fireRequested)
+    {
+        for (
+            int i = 0;
+            i < m_shipResource.GetMarkerCount();
+            ++i
+        )
+        {
+            const PspMeshMarker* marker =
+                m_shipResource.GetMarker(
+                    i
+                );
+
+
+            if (
+                marker == nullptr ||
+                marker->type !=
+                    PspMeshMarkerType::Weapon
+            )
+            {
+                continue;
+            }
+
+
+            m_projectiles.Spawn(
+                shipModelMatrix,
+                marker->position,
+                marker->forward
+            );
+        }
+
+
+        m_fireRequested =
+            false;
+    }
 
     // --------------------------------------------------------
     // ENGINE PLUMES
@@ -309,4 +373,6 @@ void Game::Render(
 
         ++engineIndex;
     }
+
+    m_projectiles.Draw();
 }

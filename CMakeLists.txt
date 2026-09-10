@@ -23,6 +23,7 @@ add_executable(${PROJECT_NAME}
 
     src/Engine/Input/Input.cpp
 
+    src/Game/Combat/ProjectileSystem.cpp
     src/Game/Game.cpp
 )
 
