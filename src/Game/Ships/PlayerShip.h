@@ -20,6 +20,9 @@ public:
 
     void Reset();
 
+    void AddWorldOffset(
+        const ScePspFVector3& offset
+    );
 
     void ApplyModelTransform() const;
 

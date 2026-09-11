@@ -551,3 +551,17 @@ float PlayerShip::GetEnginePower() const
 {
     return m_enginePower;
 }
+
+void PlayerShip::AddWorldOffset(
+    const ScePspFVector3& offset
+)
+{
+    m_position.x +=
+        offset.x;
+
+    m_position.y +=
+        offset.y;
+
+    m_position.z +=
+        offset.z;
+}

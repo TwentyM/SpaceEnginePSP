@@ -52,4 +52,6 @@ private:
     ScePspFVector3 m_targetPosition;
 
     float m_enginePhase;
+
+    bool m_playerTouchingTarget;
 };

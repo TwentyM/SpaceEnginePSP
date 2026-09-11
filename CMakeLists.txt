@@ -18,6 +18,8 @@ add_executable(${PROJECT_NAME}
     src/Engine/Graphics/Starfield.cpp
     src/Engine/Graphics/EnginePlumeRenderer.cpp
 
+    src/Engine/Physics/SphereCollision.cpp
+
     src/Engine/Resources/PspMeshResource.cpp
     src/Engine/Resources/PspTextureResource.cpp
 

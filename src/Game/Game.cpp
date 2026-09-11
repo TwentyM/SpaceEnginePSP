@@ -2,6 +2,7 @@
 
 #include "../Engine/Input/Input.h"
 #include "../Engine/Graphics/Renderer.h"
+#include "../Engine/Physics/SphereCollision.h"
 
 #include <pspkernel.h>
 #include <pspgu.h>
@@ -10,7 +11,8 @@
 
 
 Game::Game()
-    : m_enginePhase(0.0f)
+    : m_enginePhase(0.0f),
+      m_playerTouchingTarget(false)
 {
     m_targetPosition =
     {
@@ -106,6 +108,90 @@ void Game::Update(
         input,
         deltaTime
     );
+
+
+    // --------------------------------------------------------
+    // PLAYER <-> TARGET COLLISION
+    // --------------------------------------------------------
+
+    const float collisionRadius =
+        m_shipResource.GetBoundingRadius();
+
+
+    bool touchingTarget =
+        false;
+
+
+    if (collisionRadius > 0.0f)
+    {
+        SphereCollisionResult collision;
+
+
+        const ScePspFVector3 playerPosition =
+            m_playerShip.GetPosition();
+
+
+        if (
+            SphereCollision::Test(
+                playerPosition,
+                collisionRadius,
+
+                m_targetPosition,
+                collisionRadius,
+
+                collision
+            )
+        )
+        {
+            touchingTarget =
+                true;
+
+
+            /*
+                A player került penetrációba
+                a statikus targettel.
+
+                Pontosan annyival toljuk ki,
+                amennyi az átfedés.
+            */
+            ScePspFVector3 correction =
+            {
+                collision.normal.x *
+                    collision.penetration,
+
+                collision.normal.y *
+                    collision.penetration,
+
+                collision.normal.z *
+                    collision.penetration
+            };
+
+
+            m_playerShip.AddWorldOffset(
+                correction
+            );
+
+
+            /*
+                Csak az első érintkezési
+                frame-ben triggereljük.
+
+                Ha nyomod tovább a gázt,
+                nem indít minden frame-ben
+                új ripple-t.
+            */
+            if (!m_playerTouchingTarget)
+            {
+                m_targetShield.Trigger(
+                    collision.normal
+                );
+            }
+        }
+    }
+
+
+    m_playerTouchingTarget =
+        touchingTarget;
 
 
     // --------------------------------------------------------
