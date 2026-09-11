@@ -3,6 +3,13 @@
 #include <psptypes.h>
 
 
+struct ProjectileHit
+{
+    ScePspFVector3 position;
+    ScePspFVector3 normal;
+};
+
+
 class ProjectileSystem
 {
 public:
@@ -13,7 +20,6 @@ public:
 
 
     void Spawn(
-        const ScePspFMatrix4& spawnTransform,
         const ScePspFVector3& position,
         const ScePspFVector3& direction
     );
@@ -21,6 +27,14 @@ public:
 
     void Update(
         float deltaTime
+    );
+
+
+    int CheckSphereCollisions(
+        const ScePspFVector3& center,
+        float radius,
+        ProjectileHit* hits,
+        int maxHits
     );
 
 
@@ -32,12 +46,10 @@ private:
     {
         bool active;
 
-        ScePspFMatrix4 spawnTransform;
-
-        ScePspFVector3 origin;
+        ScePspFVector3 previousPosition;
+        ScePspFVector3 position;
         ScePspFVector3 direction;
 
-        float distance;
         float speed;
 
         float age;

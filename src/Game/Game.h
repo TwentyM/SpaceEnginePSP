@@ -9,6 +9,7 @@
 #include "../Engine/Graphics/EnginePlumeRenderer.h"
 #include "Combat/ProjectileSystem.h"
 #include "Ships/PlayerShip.h"
+#include "Combat/ShieldHitEffect.h"
 
 class Input;
 class Renderer;
@@ -46,6 +47,9 @@ private:
 
     PlayerShip m_playerShip;
 
+    ShieldHitEffect m_targetShield;
+
+    ScePspFVector3 m_targetPosition;
+
     float m_enginePhase;
-    bool m_fireRequested;
 };

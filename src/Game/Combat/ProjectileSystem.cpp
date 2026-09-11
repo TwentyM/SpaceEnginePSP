@@ -32,6 +32,20 @@ namespace
     }
 
 
+    ScePspFVector3 Subtract(
+        const ScePspFVector3& a,
+        const ScePspFVector3& b
+    )
+    {
+        return
+        {
+            a.x - b.x,
+            a.y - b.y,
+            a.z - b.z
+        };
+    }
+
+
     ScePspFVector3 Multiply(
         const ScePspFVector3& value,
         float scalar
@@ -43,6 +57,18 @@ namespace
             value.y * scalar,
             value.z * scalar
         };
+    }
+
+
+    float Dot(
+        const ScePspFVector3& a,
+        const ScePspFVector3& b
+    )
+    {
+        return
+            a.x * b.x +
+            a.y * b.y +
+            a.z * b.z;
     }
 
 
@@ -66,9 +92,10 @@ namespace
     {
         const float length =
             std::sqrt(
-                value.x * value.x +
-                value.y * value.y +
-                value.z * value.z
+                Dot(
+                    value,
+                    value
+                )
             );
 
 
@@ -83,16 +110,130 @@ namespace
         }
 
 
-        const float inverse =
-            1.0f / length;
+        return Multiply(
+            value,
+            1.0f / length
+        );
+    }
 
 
-        return
+    bool SegmentSphereIntersection(
+        const ScePspFVector3& start,
+        const ScePspFVector3& end,
+
+        const ScePspFVector3& center,
+        float radius,
+
+        ScePspFVector3& hitPosition
+    )
+    {
+        const ScePspFVector3 d =
+            Subtract(
+                end,
+                start
+            );
+
+
+        const ScePspFVector3 m =
+            Subtract(
+                start,
+                center
+            );
+
+
+        const float a =
+            Dot(
+                d,
+                d
+            );
+
+
+        if (a < 0.000001f)
         {
-            value.x * inverse,
-            value.y * inverse,
-            value.z * inverse
-        };
+            return false;
+        }
+
+
+        const float b =
+            2.0f *
+            Dot(
+                m,
+                d
+            );
+
+
+        const float c =
+            Dot(
+                m,
+                m
+            ) -
+            radius * radius;
+
+
+        const float discriminant =
+            b * b -
+            4.0f * a * c;
+
+
+        if (discriminant < 0.0f)
+        {
+            return false;
+        }
+
+
+        const float root =
+            std::sqrt(
+                discriminant
+            );
+
+
+        const float inverse =
+            1.0f /
+            (
+                2.0f * a
+            );
+
+
+        float t =
+            (
+                -b - root
+            ) *
+            inverse;
+
+
+        if (
+            t < 0.0f ||
+            t > 1.0f
+        )
+        {
+            t =
+                (
+                    -b + root
+                ) *
+                inverse;
+        }
+
+
+        if (
+            t < 0.0f ||
+            t > 1.0f
+        )
+        {
+            return false;
+        }
+
+
+        hitPosition =
+            Add(
+                start,
+                Multiply(
+                    d,
+                    t
+                )
+            );
+
+
+        return true;
     }
 
 
@@ -102,11 +243,17 @@ namespace
         const ScePspFVector3& position
     )
     {
-        vertex.color = color;
+        vertex.color =
+            color;
 
-        vertex.x = position.x;
-        vertex.y = position.y;
-        vertex.z = position.z;
+        vertex.x =
+            position.x;
+
+        vertex.y =
+            position.y;
+
+        vertex.z =
+            position.z;
     }
 
 
@@ -132,12 +279,9 @@ namespace
 
 
         const ScePspFVector3 tailLeft =
-            Add(
+            Subtract(
                 tail,
-                Multiply(
-                    offset,
-                    -1.0f
-                )
+                offset
             );
 
 
@@ -149,12 +293,9 @@ namespace
 
 
         const ScePspFVector3 headLeft =
-            Add(
+            Subtract(
                 head,
-                Multiply(
-                    offset,
-                    -1.0f
-                )
+                offset
             );
 
 
@@ -205,10 +346,9 @@ namespace
 
 
     void DrawLayer(
-        const ScePspFVector3& origin,
+        const ScePspFVector3& head,
         const ScePspFVector3& direction,
 
-        float distance,
         float length,
         float width,
 
@@ -219,16 +359,6 @@ namespace
         const ScePspFVector3 forward =
             Normalize(
                 direction
-            );
-
-
-        const ScePspFVector3 head =
-            Add(
-                origin,
-                Multiply(
-                    forward,
-                    distance
-                )
             );
 
 
@@ -283,7 +413,8 @@ namespace
             );
 
 
-        constexpr int VertexCount = 12;
+        constexpr int VertexCount =
+            12;
 
 
         BoltVertex* vertices =
@@ -362,7 +493,6 @@ ProjectileSystem::ProjectileSystem()
 
 
 void ProjectileSystem::Spawn(
-    const ScePspFMatrix4& spawnTransform,
     const ScePspFVector3& position,
     const ScePspFVector3& direction
 )
@@ -387,34 +517,33 @@ void ProjectileSystem::Spawn(
             true;
 
 
-        /*
-            Eltesszük a hajó spawn pillanatbeli
-            model matrixát.
-
-            Ez nagyon fontos:
-            a lövedék ezután már NEM forog
-            együtt a hajóval.
-        */
-        projectile.spawnTransform =
-            spawnTransform;
-
-
-        projectile.origin =
-            position;
-
-
         projectile.direction =
             Normalize(
                 direction
             );
 
 
-        projectile.distance =
-            0.60f;
+        /*
+            Picit előrébb indul,
+            nehogy saját hajótestből
+            induljon.
+        */
+        projectile.position =
+            Add(
+                position,
+                Multiply(
+                    projectile.direction,
+                    0.6f
+                )
+            );
+
+
+        projectile.previousPosition =
+            projectile.position;
 
 
         projectile.speed =
-            34.0f;
+            55.0f;
 
 
         projectile.age =
@@ -422,7 +551,7 @@ void ProjectileSystem::Spawn(
 
 
         projectile.lifetime =
-            2.5f;
+            3.0f;
 
 
         return;
@@ -450,12 +579,22 @@ void ProjectileSystem::Update(
         }
 
 
+        projectile.previousPosition =
+            projectile.position;
+
+
+        projectile.position =
+            Add(
+                projectile.position,
+                Multiply(
+                    projectile.direction,
+                    projectile.speed *
+                    deltaTime
+                )
+            );
+
+
         projectile.age +=
-            deltaTime;
-
-
-        projectile.distance +=
-            projectile.speed *
             deltaTime;
 
 
@@ -468,6 +607,99 @@ void ProjectileSystem::Update(
                 false;
         }
     }
+}
+
+
+int ProjectileSystem::CheckSphereCollisions(
+    const ScePspFVector3& center,
+    float radius,
+    ProjectileHit* hits,
+    int maxHits
+)
+{
+    if (
+        hits == nullptr ||
+        maxHits <= 0
+    )
+    {
+        return 0;
+    }
+
+
+    int hitCount =
+        0;
+
+
+    for (
+        int i = 0;
+        i < MaxProjectiles;
+        ++i
+    )
+    {
+        Projectile& projectile =
+            m_projectiles[i];
+
+
+        if (!projectile.active)
+        {
+            continue;
+        }
+
+
+        ScePspFVector3 hitPosition;
+
+
+        if (
+            !SegmentSphereIntersection(
+                projectile.previousPosition,
+                projectile.position,
+
+                center,
+                radius,
+
+                hitPosition
+            )
+        )
+        {
+            continue;
+        }
+
+
+        projectile.active =
+            false;
+
+
+        ProjectileHit& hit =
+            hits[hitCount];
+
+
+        hit.position =
+            hitPosition;
+
+
+        hit.normal =
+            Normalize(
+                Subtract(
+                    hitPosition,
+                    center
+                )
+            );
+
+
+        ++hitCount;
+
+
+        if (
+            hitCount >=
+            maxHits
+        )
+        {
+            break;
+        }
+    }
+
+
+    return hitCount;
 }
 
 
@@ -500,18 +732,20 @@ void ProjectileSystem::Draw() const
     );
 
 
-    /*
-        Ütközzenek a depth bufferrel,
-        viszont a glow ne írja felül azt.
-    */
     sceGuDepthMask(
         GU_TRUE
     );
 
 
+    /*
+        A projectile-ok már világkoordinátában
+        vannak.
+    */
     sceGumMatrixMode(
         GU_MODEL
     );
+
+    sceGumLoadIdentity();
 
 
     for (
@@ -530,21 +764,9 @@ void ProjectileSystem::Draw() const
         }
 
 
-        /*
-            A lövedék saját, spawnkor eltett
-            koordinátarendszerét használjuk.
-        */
-        sceGumLoadMatrix(
-            &projectile.spawnTransform
-        );
-
-
-        // Külső narancssárga glow.
         DrawLayer(
-            projectile.origin,
+            projectile.position,
             projectile.direction,
-
-            projectile.distance,
 
             1.70f,
             0.18f,
@@ -554,12 +776,9 @@ void ProjectileSystem::Draw() const
         );
 
 
-        // Fényes belső mag.
         DrawLayer(
-            projectile.origin,
+            projectile.position,
             projectile.direction,
-
-            projectile.distance,
 
             1.25f,
             0.075f,
@@ -578,7 +797,4 @@ void ProjectileSystem::Draw() const
     sceGuDisable(
         GU_BLEND
     );
-
-
-    sceGumLoadIdentity();
 }

@@ -10,9 +10,14 @@
 
 
 Game::Game()
-    : m_enginePhase(0.0f),
-    m_fireRequested(false)
+    : m_enginePhase(0.0f)
 {
+    m_targetPosition =
+    {
+        0.0f,
+        0.0f,
+        -90.0f
+    };
 }
 
 
@@ -114,7 +119,7 @@ void Game::Update(
 
 
     // --------------------------------------------------------
-    // ENGINE EFFECT
+    // ENGINE
     // --------------------------------------------------------
 
     const float enginePower =
@@ -131,12 +136,8 @@ void Game::Update(
 
 
     // --------------------------------------------------------
-    // PROJECTILES
+    // FIRE
     // --------------------------------------------------------
-
-    m_projectiles.Update(
-        deltaTime
-    );
 
     if (
         input.IsPressed(
@@ -144,9 +145,124 @@ void Game::Update(
         )
     )
     {
-        m_fireRequested =
-            true;
+        const ScePspFVector3 shipPosition =
+            m_playerShip.GetPosition();
+
+
+        const ScePspFQuaternion shipOrientation =
+            m_playerShip.GetOrientation();
+
+
+        for (
+            int i = 0;
+            i <
+            m_shipResource.GetMarkerCount();
+            ++i
+        )
+        {
+            const PspMeshMarker* marker =
+                m_shipResource.GetMarker(
+                    i
+                );
+
+
+            if (
+                marker == nullptr ||
+                marker->type !=
+                    PspMeshMarkerType::Weapon
+            )
+            {
+                continue;
+            }
+
+
+            ScePspFVector3 rotatedPosition;
+
+
+            gumRotateVector(
+                &rotatedPosition,
+                &shipOrientation,
+                &marker->position
+            );
+
+
+            ScePspFVector3 worldPosition =
+            {
+                shipPosition.x +
+                    rotatedPosition.x,
+
+                shipPosition.y +
+                    rotatedPosition.y,
+
+                shipPosition.z +
+                    rotatedPosition.z
+            };
+
+
+            ScePspFVector3 worldDirection;
+
+
+            gumRotateVector(
+                &worldDirection,
+                &shipOrientation,
+                &marker->forward
+            );
+
+
+            m_projectiles.Spawn(
+                worldPosition,
+                worldDirection
+            );
+        }
     }
+
+
+    // --------------------------------------------------------
+    // PROJECTILES
+    // --------------------------------------------------------
+
+    m_projectiles.Update(
+        deltaTime
+    );
+
+
+    // --------------------------------------------------------
+    // TARGET COLLISION
+    // --------------------------------------------------------
+
+    ProjectileHit hits[4];
+
+
+    const int hitCount =
+        m_projectiles.CheckSphereCollisions(
+            m_targetPosition,
+
+            m_shipResource.GetBoundingRadius(),
+
+            hits,
+            4
+        );
+
+
+    for (
+        int i = 0;
+        i < hitCount;
+        ++i
+    )
+    {
+        m_targetShield.Trigger(
+            hits[i].normal
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // SHIELD EFFECT
+    // --------------------------------------------------------
+
+    m_targetShield.Update(
+        deltaTime
+    );
 }
 
 
@@ -229,46 +345,43 @@ void Game::Render(
 
 
     // --------------------------------------------------------
-    // WEAPON FIRE
+    // TARGET SIDEWINDER
     // --------------------------------------------------------
 
-    if (m_fireRequested)
+    sceGumMatrixMode(
+        GU_MODEL
+    );
+
+    sceGumLoadIdentity();
+
+
+    sceGumTranslate(
+        &m_targetPosition
+    );
+
+
+    /*
+        180 fokkal megfordítjuk,
+        így a target a player felé néz.
+    */
+    ScePspFVector3 targetRotation =
     {
-        for (
-            int i = 0;
-            i <
-            m_shipResource.GetMarkerCount();
-            ++i
-        )
-        {
-            const PspMeshMarker* marker =
-                m_shipResource.GetMarker(
-                    i
-                );
+        0.0f,
+        3.14159265f,
+        0.0f
+    };
 
 
-            if (
-                marker == nullptr ||
-                marker->type !=
-                    PspMeshMarkerType::Weapon
-            )
-            {
-                continue;
-            }
+    sceGumRotateXYZ(
+        &targetRotation
+    );
 
 
-            m_projectiles.Spawn(
-                shipModelMatrix,
-                marker->position,
-                marker->forward
-            );
-        }
+    m_shipTexture.Bind();
 
+    m_shipMesh.Draw();
 
-        m_fireRequested =
-            false;
-    }
-
+    m_shipTexture.Unbind();
 
     // --------------------------------------------------------
     // ENGINE PLUMES
@@ -276,6 +389,7 @@ void Game::Render(
 
     m_sun.Disable();
 
+    m_playerShip.ApplyModelTransform();
 
     int engineIndex =
         0;
@@ -331,6 +445,12 @@ void Game::Render(
     // --------------------------------------------------------
     // PROJECTILES
     // --------------------------------------------------------
+
+    m_targetShield.Draw(
+        m_targetPosition,
+        m_shipResource.GetBoundingRadius()
+    );
+
 
     m_projectiles.Draw();
 }

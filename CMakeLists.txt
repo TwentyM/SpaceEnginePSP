@@ -25,6 +25,7 @@ add_executable(${PROJECT_NAME}
     
     src/Game/Ships/PlayerShip.cpp
     src/Game/Combat/ProjectileSystem.cpp
+    src/Game/Combat/ShieldHitEffect.cpp
     src/Game/Game.cpp
 )
 
