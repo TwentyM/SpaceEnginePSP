@@ -495,20 +495,6 @@ void PlayerShip::Update(
             m_enginePower
         ) *
         response;
-
-
-    // --------------------------------------------------------
-    // RESET
-    // --------------------------------------------------------
-
-    if (
-        input.IsPressed(
-            PSP_CTRL_SQUARE
-        )
-    )
-    {
-        Reset();
-    }
 }
 
 

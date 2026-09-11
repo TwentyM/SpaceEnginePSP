@@ -12,7 +12,8 @@
 
 Game::Game()
     : m_enginePhase(0.0f),
-      m_playerTouchingTarget(false)
+      m_playerTouchingTarget(false),
+      m_targetSelected(false)
 {
     m_targetPosition =
     {
@@ -202,6 +203,83 @@ void Game::Update(
         m_playerShip.GetPosition(),
         m_playerShip.GetOrientation()
     );
+
+
+    // --------------------------------------------------------
+    // TARGET SELECTION
+    // --------------------------------------------------------
+
+    if (
+        input.IsPressed(
+            PSP_CTRL_SELECT
+        )
+    )
+    {
+        /*
+            Ha már ki van jelölve,
+            SELECT = deselect.
+        */
+        if (m_targetSelected)
+        {
+            m_targetSelected =
+                false;
+        }
+        else
+        {
+            float screenX =
+                0.0f;
+
+            float screenY =
+                0.0f;
+
+            float depth =
+                0.0f;
+
+
+            const bool visible =
+                m_camera.ProjectWorldToScreen(
+                    m_targetPosition,
+
+                    screenX,
+                    screenY,
+                    depth
+                );
+
+
+            if (visible)
+            {
+                const float dx =
+                    screenX -
+                    240.0f;
+
+
+                const float dy =
+                    screenY -
+                    136.0f;
+
+
+                /*
+                    SELECT csak akkor fogja meg
+                    a targetet, ha nagyjából
+                    a célkereszt közelében van.
+                */
+                constexpr float selectionRadius =
+                    85.0f;
+
+
+                if (
+                    dx * dx +
+                    dy * dy <=
+                    selectionRadius *
+                    selectionRadius
+                )
+                {
+                    m_targetSelected =
+                        true;
+                }
+            }
+        }
+    }
 
 
     // --------------------------------------------------------
@@ -539,4 +617,40 @@ void Game::Render(
 
 
     m_projectiles.Draw();
+
+
+    // --------------------------------------------------------
+    // HUD
+    // --------------------------------------------------------
+
+    float targetScreenX =
+        0.0f;
+
+    float targetScreenY =
+        0.0f;
+
+    float targetDepth =
+        0.0f;
+
+
+    const bool targetOnScreen =
+        m_camera.ProjectWorldToScreen(
+            m_targetPosition,
+
+            targetScreenX,
+            targetScreenY,
+            targetDepth
+        );
+
+
+    m_hud.Draw(
+        m_playerShip.GetEnginePower(),
+
+        m_targetSelected,
+        targetOnScreen,
+
+        targetScreenX,
+        targetScreenY,
+        targetDepth
+    );
 }

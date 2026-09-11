@@ -10,6 +10,7 @@
 #include "Combat/ProjectileSystem.h"
 #include "Ships/PlayerShip.h"
 #include "Combat/ShieldHitEffect.h"
+#include "UI/HudRenderer.h"
 
 class Input;
 class Renderer;
@@ -49,9 +50,13 @@ private:
 
     ShieldHitEffect m_targetShield;
 
+    HudRenderer m_hud;
+
     ScePspFVector3 m_targetPosition;
 
     float m_enginePhase;
 
     bool m_playerTouchingTarget;
+
+    bool m_targetSelected;
 };

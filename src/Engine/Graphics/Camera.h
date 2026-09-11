@@ -21,6 +21,14 @@ public:
     ScePspFVector3 GetPosition() const;
 
 
+    bool ProjectWorldToScreen(
+        const ScePspFVector3& worldPosition,
+        float& screenX,
+        float& screenY,
+        float& depth
+    ) const;
+
+
 private:
     ScePspFVector3 m_position;
 
