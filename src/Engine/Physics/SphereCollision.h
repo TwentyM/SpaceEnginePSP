@@ -25,4 +25,17 @@ public:
 
         SphereCollisionResult& result
     );
+
+    static bool Raycast(
+        const ScePspFVector3& origin,
+        const ScePspFVector3& direction,
+
+        const ScePspFVector3& center,
+        float radius,
+
+        float maxDistance,
+
+        ScePspFVector3& hitPoint,
+        float& hitDistance
+    );
 };

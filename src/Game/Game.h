@@ -53,6 +53,7 @@ private:
     HudRenderer m_hud;
 
     ScePspFVector3 m_targetPosition;
+    ScePspFQuaternion m_targetOrientation;
 
     float m_enginePhase;
 

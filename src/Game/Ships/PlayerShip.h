@@ -33,6 +33,7 @@ public:
 
 
     float GetEnginePower() const;
+    float GetThrottle() const;
 
 
 private:
@@ -62,6 +63,6 @@ private:
     float m_lookSpeed;
     float m_rollSpeed;
 
-
     float m_enginePower;
+    float m_throttle;
 };

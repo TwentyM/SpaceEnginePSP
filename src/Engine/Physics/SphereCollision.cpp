@@ -171,3 +171,138 @@ bool SphereCollision::Test(
 
     return true;
 }
+
+bool SphereCollision::Raycast(
+    const ScePspFVector3& origin,
+    const ScePspFVector3& direction,
+
+    const ScePspFVector3& center,
+    float radius,
+
+    float maxDistance,
+
+    ScePspFVector3& hitPoint,
+    float& hitDistance
+)
+{
+    const float directionLength =
+        std::sqrt(
+            Dot(
+                direction,
+                direction
+            )
+        );
+
+
+    if (directionLength < 0.00001f)
+    {
+        return false;
+    }
+
+
+    const float inverseLength =
+        1.0f /
+        directionLength;
+
+
+    const ScePspFVector3 d =
+    {
+        direction.x *
+            inverseLength,
+
+        direction.y *
+            inverseLength,
+
+        direction.z *
+            inverseLength
+    };
+
+
+    const ScePspFVector3 m =
+        Subtract(
+            origin,
+            center
+        );
+
+
+    const float b =
+        Dot(
+            m,
+            d
+        );
+
+
+    const float c =
+        Dot(
+            m,
+            m
+        ) -
+        radius *
+        radius;
+
+
+    if (
+        c > 0.0f &&
+        b > 0.0f
+    )
+    {
+        return false;
+    }
+
+
+    const float discriminant =
+        b * b -
+        c;
+
+
+    if (discriminant < 0.0f)
+    {
+        return false;
+    }
+
+
+    float distance =
+        -b -
+        std::sqrt(
+            discriminant
+        );
+
+
+    if (distance < 0.0f)
+    {
+        distance =
+            0.0f;
+    }
+
+
+    if (
+        distance >
+        maxDistance
+    )
+    {
+        return false;
+    }
+
+
+    hitDistance =
+        distance;
+
+
+    hitPoint =
+    {
+        origin.x +
+            d.x *
+            distance,
+
+        origin.y +
+            d.y *
+            distance,
+
+        origin.z +
+            d.z *
+            distance
+    };
+
+
+    return true;
+}

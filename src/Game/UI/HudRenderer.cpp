@@ -2,27 +2,11 @@
 
 #include <pspgu.h>
 
+#include <cmath>
+
 
 namespace
 {
-    constexpr short ScreenWidth =
-        480;
-
-    constexpr short ScreenHeight =
-        272;
-
-
-    constexpr short ScreenCenterX =
-        ScreenWidth / 2;
-
-    constexpr short ScreenCenterY =
-        ScreenHeight / 2;
-
-
-    /*
-        PSP színek ABGR sorrendűek.
-    */
-
     constexpr unsigned int HudWhite =
         0xFFFFFFFF;
 
@@ -69,30 +53,22 @@ void HudRenderer::DrawLine(
     }
 
 
-    vertices[0].color =
-        color;
-
-    vertices[0].x =
-        x1;
-
-    vertices[0].y =
-        y1;
-
-    vertices[0].z =
-        0;
+    vertices[0] =
+    {
+        color,
+        x1,
+        y1,
+        0
+    };
 
 
-    vertices[1].color =
-        color;
-
-    vertices[1].x =
-        x2;
-
-    vertices[1].y =
-        y2;
-
-    vertices[1].z =
-        0;
+    vertices[1] =
+    {
+        color,
+        x2,
+        y2,
+        0
+    };
 
 
     sceGuDrawArray(
@@ -110,99 +86,21 @@ void HudRenderer::DrawLine(
 }
 
 
-void HudRenderer::DrawCrosshair() const
-{
-    constexpr short gap =
-        5;
-
-    constexpr short length =
-        10;
-
-
-    // Left
-    DrawLine(
-        ScreenCenterX -
-            gap -
-            length,
-
-        ScreenCenterY,
-
-        ScreenCenterX -
-            gap,
-
-        ScreenCenterY,
-
-        HudWhite
-    );
-
-
-    // Right
-    DrawLine(
-        ScreenCenterX +
-            gap,
-
-        ScreenCenterY,
-
-        ScreenCenterX +
-            gap +
-            length,
-
-        ScreenCenterY,
-
-        HudWhite
-    );
-
-
-    // Top
-    DrawLine(
-        ScreenCenterX,
-
-        ScreenCenterY -
-            gap -
-            length,
-
-        ScreenCenterX,
-
-        ScreenCenterY -
-            gap,
-
-        HudWhite
-    );
-
-
-    // Bottom
-    DrawLine(
-        ScreenCenterX,
-
-        ScreenCenterY +
-            gap,
-
-        ScreenCenterX,
-
-        ScreenCenterY +
-            gap +
-            length,
-
-        HudWhite
-    );
-}
-
-
 void HudRenderer::DrawThrottle(
-    float enginePower
+    float throttle
 ) const
 {
-    if (enginePower < 0.0f)
+    if (throttle > 1.0f)
     {
-        enginePower =
-            0.0f;
+        throttle =
+            1.0f;
     }
 
 
-    if (enginePower > 1.0f)
+    if (throttle < -1.0f)
     {
-        enginePower =
-            1.0f;
+        throttle =
+            -1.0f;
     }
 
 
@@ -210,10 +108,13 @@ void HudRenderer::DrawThrottle(
         15;
 
     constexpr short top =
-        80;
+        76;
+
+    constexpr short center =
+        136;
 
     constexpr short bottom =
-        192;
+        196;
 
 
     DrawLine(
@@ -227,55 +128,86 @@ void HudRenderer::DrawThrottle(
     );
 
 
-    /*
-        Tick marks.
-    */
-    for (
-        int i = 0;
-        i <= 4;
-        ++i
-    )
-    {
-        const short y =
-            static_cast<short>(
-                top +
-                (
-                    bottom -
-                    top
-                ) *
-                i /
-                4
-            );
+    // +100 %
+    DrawLine(
+        x - 3,
+        top,
+
+        x + 3,
+        top,
+
+        HudDim
+    );
 
 
-        DrawLine(
-            x - 3,
-            y,
+    // +50 %
+    DrawLine(
+        x - 2,
+        106,
 
-            x + 3,
-            y,
+        x + 2,
+        106,
 
-            HudDim
-        );
-    }
+        HudDim
+    );
+
+
+    // Neutral.
+    DrawLine(
+        x - 6,
+        center,
+
+        x + 6,
+        center,
+
+        HudWhite
+    );
+
+
+    // -50 %
+    DrawLine(
+        x - 2,
+        166,
+
+        x + 2,
+        166,
+
+        HudDim
+    );
+
+
+    // -100 %
+    DrawLine(
+        x - 3,
+        bottom,
+
+        x + 3,
+        bottom,
+
+        HudDim
+    );
+
+
+    const short halfRange =
+        center -
+        top;
 
 
     const short markerY =
         static_cast<short>(
-            bottom -
-            (
-                bottom -
-                top
-            ) *
-            enginePower
+            center -
+            throttle *
+            static_cast<float>(
+                halfRange
+            )
         );
 
 
     DrawLine(
-        x - 6,
+        x - 7,
         markerY,
 
-        x + 6,
+        x + 7,
         markerY,
 
         HudOrange
@@ -283,10 +215,10 @@ void HudRenderer::DrawThrottle(
 
 
     DrawLine(
-        x - 5,
+        x - 6,
         markerY - 1,
 
-        x + 5,
+        x + 6,
         markerY - 1,
 
         HudOrange
@@ -294,207 +226,259 @@ void HudRenderer::DrawThrottle(
 }
 
 
-void HudRenderer::DrawTargetBracket(
-    float screenX,
-    float screenY,
-    float depth
+void HudRenderer::DrawTargetTriangle(
+    const HudTargetMarker& target
 ) const
 {
-    short halfSize =
-        18;
-
-
-    if (depth < 45.0f)
+    if (
+        !target.selected ||
+        !target.visible
+    )
     {
-        halfSize =
-            25;
-    }
-    else if (depth > 140.0f)
-    {
-        halfSize =
-            13;
+        return;
     }
 
 
-    constexpr short arm =
-        7;
+    float directionX =
+        target.directionX;
+
+    float directionY =
+        target.directionY;
+
+
+    float directionLength =
+        std::sqrt(
+            directionX *
+            directionX +
+            directionY *
+            directionY
+        );
+
+
+    /*
+        Ha a target pont a kamera felé vagy
+        attól elfelé néz, a forward vetülete
+        gyakorlatilag ponttá esik össze.
+    */
+    if (
+        !target.directionValid ||
+        directionLength < 0.001f
+    )
+    {
+        directionX =
+            0.0f;
+
+        directionY =
+            -1.0f;
+
+        directionLength =
+            1.0f;
+    }
+
+
+    directionX /=
+        directionLength;
+
+    directionY /=
+        directionLength;
+
+
+    const float perpendicularX =
+        -directionY;
+
+    const float perpendicularY =
+        directionX;
+
+
+    float size =
+        21.0f;
+
+
+    if (target.depth < 45.0f)
+    {
+        size =
+            29.0f;
+    }
+    else if (target.depth > 140.0f)
+    {
+        size =
+            15.0f;
+    }
+
+
+    /*
+        A háromszög csúcsa mindig
+        a target projected forward
+        irányába néz.
+    */
+    const float apexX =
+        target.x +
+        directionX *
+        size;
+
+    const float apexY =
+        target.y +
+        directionY *
+        size;
+
+
+    const float backCenterX =
+        target.x -
+        directionX *
+        size *
+        0.55f;
+
+    const float backCenterY =
+        target.y -
+        directionY *
+        size *
+        0.55f;
+
+
+    const float halfBase =
+        size *
+        0.72f;
+
+
+    const float leftX =
+        backCenterX +
+        perpendicularX *
+        halfBase;
+
+    const float leftY =
+        backCenterY +
+        perpendicularY *
+        halfBase;
+
+
+    const float rightX =
+        backCenterX -
+        perpendicularX *
+        halfBase;
+
+    const float rightY =
+        backCenterY -
+        perpendicularY *
+        halfBase;
+
+
+    DrawLine(
+        static_cast<short>(apexX),
+        static_cast<short>(apexY),
+
+        static_cast<short>(leftX),
+        static_cast<short>(leftY),
+
+        HudOrange
+    );
+
+
+    DrawLine(
+        static_cast<short>(leftX),
+        static_cast<short>(leftY),
+
+        static_cast<short>(rightX),
+        static_cast<short>(rightY),
+
+        HudOrange
+    );
+
+
+    DrawLine(
+        static_cast<short>(rightX),
+        static_cast<short>(rightY),
+
+        static_cast<short>(apexX),
+        static_cast<short>(apexY),
+
+        HudOrange
+    );
+}
+
+
+void HudRenderer::DrawWeaponReticle(
+    const HudWeaponReticle& reticle
+) const
+{
+    if (!reticle.visible)
+    {
+        return;
+    }
+
+
+    const unsigned int color =
+        reticle.impact
+            ? HudOrange
+            : HudWhite;
 
 
     const short x =
         static_cast<short>(
-            screenX
+            reticle.x
         );
 
     const short y =
         static_cast<short>(
-            screenY
+            reticle.y
         );
 
 
-    const short left =
-        x - halfSize;
+    constexpr short outer =
+        7;
 
-    const short right =
-        x + halfSize;
+    constexpr short inner =
+        2;
 
-    const short top =
-        y - halfSize;
-
-    const short bottom =
-        y + halfSize;
-
-
-    // Top-left
-    DrawLine(
-        left,
-        top,
-
-        left + arm,
-        top,
-
-        HudOrange
-    );
 
     DrawLine(
-        left,
-        top,
+        x - outer,
+        y,
 
-        left,
-        top + arm,
+        x - inner,
+        y,
 
-        HudOrange
+        color
     );
 
 
-    // Top-right
     DrawLine(
-        right - arm,
-        top,
+        x + inner,
+        y,
 
-        right,
-        top,
+        x + outer,
+        y,
 
-        HudOrange
+        color
     );
-
-    DrawLine(
-        right,
-        top,
-
-        right,
-        top + arm,
-
-        HudOrange
-    );
-
-
-    // Bottom-left
-    DrawLine(
-        left,
-        bottom,
-
-        left + arm,
-        bottom,
-
-        HudOrange
-    );
-
-    DrawLine(
-        left,
-        bottom - arm,
-
-        left,
-        bottom,
-
-        HudOrange
-    );
-
-
-    // Bottom-right
-    DrawLine(
-        right - arm,
-        bottom,
-
-        right,
-        bottom,
-
-        HudOrange
-    );
-
-    DrawLine(
-        right,
-        bottom - arm,
-
-        right,
-        bottom,
-
-        HudOrange
-    );
-
-
-    /*
-        Kis target center diamond.
-    */
-    constexpr short diamond =
-        3;
 
 
     DrawLine(
         x,
-        y - diamond,
-
-        x + diamond,
-        y,
-
-        HudOrange
-    );
-
-    DrawLine(
-        x + diamond,
-        y,
+        y - outer,
 
         x,
-        y + diamond,
+        y - inner,
 
-        HudOrange
+        color
     );
+
 
     DrawLine(
         x,
-        y + diamond,
-
-        x - diamond,
-        y,
-
-        HudOrange
-    );
-
-    DrawLine(
-        x - diamond,
-        y,
+        y + inner,
 
         x,
-        y - diamond,
+        y + outer,
 
-        HudOrange
+        color
     );
 }
 
 
 void HudRenderer::Draw(
-    float enginePower,
-
-    bool targetSelected,
-    bool targetOnScreen,
-
-    float targetScreenX,
-    float targetScreenY,
-    float targetDepth
+    const HudFrameData& data
 ) const
 {
-    /*
-        Innentől screen-space overlay.
-    */
     sceGuDisable(
         GU_LIGHTING
     );
@@ -516,30 +500,29 @@ void HudRenderer::Draw(
     );
 
 
-    DrawCrosshair();
-
-
     DrawThrottle(
-        enginePower
+        data.throttle
     );
 
 
-    if (
-        targetSelected &&
-        targetOnScreen
+    DrawTargetTriangle(
+        data.target
+    );
+
+
+    for (
+        int i = 0;
+        i <
+        data.weaponReticleCount;
+        ++i
     )
     {
-        DrawTargetBracket(
-            targetScreenX,
-            targetScreenY,
-            targetDepth
+        DrawWeaponReticle(
+            data.weaponReticles[i]
         );
     }
 
 
-    /*
-        Következő frame-re visszaállítjuk.
-    */
     sceGuEnable(
         GU_DEPTH_TEST
     );

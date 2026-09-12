@@ -21,6 +21,20 @@ Game::Game()
         0.0f,
         -90.0f
     };
+    /*
+        180 fok Y körül.
+
+        quaternion:
+        sin(pi/2) = 1
+        cos(pi/2) = 0
+    */
+    m_targetOrientation =
+    {
+        0.0f,
+        1.0f,
+        0.0f,
+        0.0f
+    };
 }
 
 
@@ -528,16 +542,8 @@ void Game::Render(
         180 fokkal megfordítjuk,
         így a target a player felé néz.
     */
-    ScePspFVector3 targetRotation =
-    {
-        0.0f,
-        3.14159265f,
-        0.0f
-    };
-
-
-    sceGumRotateXYZ(
-        &targetRotation
+    sceGumRotate(
+        &m_targetOrientation
     );
 
 
@@ -623,6 +629,21 @@ void Game::Render(
     // HUD
     // --------------------------------------------------------
 
+    HudFrameData hudData{};
+
+
+    hudData.throttle =
+        m_playerShip.GetThrottle();
+
+
+    hudData.target.selected =
+        m_targetSelected;
+
+
+    // --------------------------------------------------------
+    // TARGET SCREEN POSITION
+    // --------------------------------------------------------
+
     float targetScreenX =
         0.0f;
 
@@ -633,7 +654,7 @@ void Game::Render(
         0.0f;
 
 
-    const bool targetOnScreen =
+    hudData.target.visible =
         m_camera.ProjectWorldToScreen(
             m_targetPosition,
 
@@ -643,14 +664,265 @@ void Game::Render(
         );
 
 
+    hudData.target.x =
+        targetScreenX;
+
+    hudData.target.y =
+        targetScreenY;
+
+    hudData.target.depth =
+        targetDepth;
+
+
+    // --------------------------------------------------------
+    // TARGET FORWARD DIRECTION
+    // --------------------------------------------------------
+
+    const ScePspFVector3 targetLocalForward =
+    {
+        0.0f,
+        0.0f,
+        -1.0f
+    };
+
+
+    ScePspFVector3 targetForward;
+
+
+    gumRotateVector(
+        &targetForward,
+        &m_targetOrientation,
+        &targetLocalForward
+    );
+
+
+    const ScePspFVector3 targetForwardPoint =
+    {
+        m_targetPosition.x +
+            targetForward.x *
+            20.0f,
+
+        m_targetPosition.y +
+            targetForward.y *
+            20.0f,
+
+        m_targetPosition.z +
+            targetForward.z *
+            20.0f
+    };
+
+
+    float forwardScreenX =
+        0.0f;
+
+    float forwardScreenY =
+        0.0f;
+
+    float forwardDepth =
+        0.0f;
+
+
+    m_camera.ProjectWorldToScreen(
+        targetForwardPoint,
+
+        forwardScreenX,
+        forwardScreenY,
+        forwardDepth
+    );
+
+
+    hudData.target.directionX =
+        forwardScreenX -
+        targetScreenX;
+
+
+    hudData.target.directionY =
+        forwardScreenY -
+        targetScreenY;
+
+
+    const float directionLengthSquared =
+        hudData.target.directionX *
+        hudData.target.directionX +
+        hudData.target.directionY *
+        hudData.target.directionY;
+
+
+    hudData.target.directionValid =
+        forwardDepth > 0.1f &&
+        directionLengthSquared > 1.0f;
+
+
+    // --------------------------------------------------------
+    // WEAPON RETICLES
+    // --------------------------------------------------------
+
+    hudData.weaponReticleCount =
+        0;
+
+
+    const ScePspFVector3 playerPosition =
+        m_playerShip.GetPosition();
+
+
+    const ScePspFQuaternion playerOrientation =
+        m_playerShip.GetOrientation();
+
+
+    for (
+        int i = 0;
+        i <
+        m_shipResource.GetMarkerCount();
+        ++i
+    )
+    {
+        if (
+            hudData.weaponReticleCount >=
+            HudFrameData::MaxWeaponReticles
+        )
+        {
+            break;
+        }
+
+
+        const PspMeshMarker* marker =
+            m_shipResource.GetMarker(
+                i
+            );
+
+
+        if (
+            marker == nullptr ||
+            marker->type !=
+                PspMeshMarkerType::Weapon
+        )
+        {
+            continue;
+        }
+
+
+        ScePspFVector3 rotatedPosition;
+
+
+        gumRotateVector(
+            &rotatedPosition,
+            &playerOrientation,
+            &marker->position
+        );
+
+
+        const ScePspFVector3 weaponOrigin =
+        {
+            playerPosition.x +
+                rotatedPosition.x,
+
+            playerPosition.y +
+                rotatedPosition.y,
+
+            playerPosition.z +
+                rotatedPosition.z
+        };
+
+
+        ScePspFVector3 weaponDirection;
+
+
+        gumRotateVector(
+            &weaponDirection,
+            &playerOrientation,
+            &marker->forward
+        );
+
+
+        ScePspFVector3 aimPoint;
+
+
+        float hitDistance =
+            0.0f;
+
+
+        const bool impact =
+            SphereCollision::Raycast(
+                weaponOrigin,
+                weaponDirection,
+
+                m_targetPosition,
+                m_shipResource.GetBoundingRadius(),
+
+                500.0f,
+
+                aimPoint,
+                hitDistance
+            );
+
+
+        if (!impact)
+        {
+            constexpr float referenceDistance =
+                140.0f;
+
+
+            aimPoint =
+            {
+                weaponOrigin.x +
+                    weaponDirection.x *
+                    referenceDistance,
+
+                weaponOrigin.y +
+                    weaponDirection.y *
+                    referenceDistance,
+
+                weaponOrigin.z +
+                    weaponDirection.z *
+                    referenceDistance
+            };
+        }
+
+
+        float reticleX =
+            0.0f;
+
+        float reticleY =
+            0.0f;
+
+        float reticleDepth =
+            0.0f;
+
+
+        const bool visible =
+            m_camera.ProjectWorldToScreen(
+                aimPoint,
+
+                reticleX,
+                reticleY,
+                reticleDepth
+            );
+
+
+        HudWeaponReticle& reticle =
+            hudData.weaponReticles[
+                hudData.weaponReticleCount
+            ];
+
+
+        reticle.visible =
+            visible;
+
+        reticle.x =
+            reticleX;
+
+        reticle.y =
+            reticleY;
+
+        reticle.impact =
+            impact;
+
+
+        ++hudData.weaponReticleCount;
+    }
+
+
     m_hud.Draw(
-        m_playerShip.GetEnginePower(),
-
-        m_targetSelected,
-        targetOnScreen,
-
-        targetScreenX,
-        targetScreenY,
-        targetDepth
+        hudData
     );
 }

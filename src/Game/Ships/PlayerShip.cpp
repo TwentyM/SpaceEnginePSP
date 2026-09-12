@@ -107,7 +107,8 @@ PlayerShip::PlayerShip()
       m_strafeSpeed(7.0f),
       m_lookSpeed(1.8f),
       m_rollSpeed(1.5f),
-      m_enginePower(0.25f)
+      m_enginePower(0.25f),
+      m_throttle(0.0f)
 {
     Reset();
 }
@@ -133,7 +134,10 @@ void PlayerShip::Reset()
 
 
     m_enginePower =
-        0.25f;
+    0.25f;
+
+    m_throttle =
+        0.0f;
 }
 
 
@@ -447,8 +451,12 @@ void PlayerShip::Update(
 
 
     // --------------------------------------------------------
-    // ENGINE POWER
+    // THROTTLE / ENGINE POWER
     // --------------------------------------------------------
+
+    float targetThrottle =
+        0.0f;
+
 
     float targetPower =
         0.25f;
@@ -460,19 +468,26 @@ void PlayerShip::Update(
         )
     )
     {
+        targetThrottle =
+            boost
+                ? 1.0f
+                : 0.70f;
+
+
         targetPower =
             boost
                 ? 1.0f
                 : 0.70f;
     }
-
-
-    if (
+    else if (
         input.IsDown(
             PSP_CTRL_CROSS
         )
     )
     {
+        targetThrottle =
+            -0.40f;
+
         targetPower =
             0.40f;
     }
@@ -485,8 +500,17 @@ void PlayerShip::Update(
 
     if (response > 1.0f)
     {
-        response = 1.0f;
+        response =
+            1.0f;
     }
+
+
+    m_throttle +=
+        (
+            targetThrottle -
+            m_throttle
+        ) *
+        response;
 
 
     m_enginePower +=
@@ -550,4 +574,9 @@ void PlayerShip::AddWorldOffset(
 
     m_position.z +=
         offset.z;
+}
+
+float PlayerShip::GetThrottle() const
+{
+    return m_throttle;
 }

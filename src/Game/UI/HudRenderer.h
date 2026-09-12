@@ -1,34 +1,75 @@
 #pragma once
 
 
+struct HudWeaponReticle
+{
+    bool visible;
+
+    float x;
+    float y;
+
+    bool impact;
+};
+
+
+struct HudTargetMarker
+{
+    bool selected;
+    bool visible;
+
+    float x;
+    float y;
+    float depth;
+
+    bool directionValid;
+
+    float directionX;
+    float directionY;
+};
+
+
+struct HudFrameData
+{
+    float throttle;
+
+
+    HudTargetMarker target;
+
+
+    static constexpr int MaxWeaponReticles =
+        4;
+
+
+    HudWeaponReticle weaponReticles[
+        MaxWeaponReticles
+    ];
+
+
+    int weaponReticleCount;
+};
+
+
 class HudRenderer
 {
 public:
     void Draw(
-        float enginePower,
-
-        bool targetSelected,
-        bool targetOnScreen,
-
-        float targetScreenX,
-        float targetScreenY,
-        float targetDepth
+        const HudFrameData& data
     ) const;
 
 
 private:
-    void DrawCrosshair() const;
-
-
     void DrawThrottle(
-        float enginePower
+        float throttle
     ) const;
 
 
-    void DrawTargetBracket(
-        float screenX,
-        float screenY,
-        float depth
+    void DrawTargetTriangle(
+        const HudTargetMarker& target
+    ) const;
+
+
+    void DrawWeaponReticle(
+        const HudWeaponReticle& reticle
     ) const;
 
 

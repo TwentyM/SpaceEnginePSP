@@ -88,15 +88,15 @@ namespace
 }
 
 Camera::Camera()
-    : m_chaseDistance(32.0f),
-      m_chaseHeight(7.0f),
-      m_lookAhead(4.0f)
+    : m_chaseDistance(18.0f),
+      m_chaseHeight(8.0f),
+      m_lookAhead(6.0f)
 {
     m_position =
     {
         0.0f,
-        7.0f,
-        32.0f
+        8.0f,
+        18.0f
     };
 
 
@@ -104,7 +104,7 @@ Camera::Camera()
     {
         0.0f,
         0.0f,
-        -4.0f
+        -6.0f
     };
 
 
